@@ -25,28 +25,28 @@ program texasholdem.aleo {
         position: u8,
     }
 
-    struct Card {
-        suit: u8,
-        number: u8,
+    record Card {
+        owner: address,
+        id: u64,
     }
 
-    struct Players {
-        player0: address,
-        player1: address,
-        player2: address,
-        player3: address,
+    struct Player {
+        name: address,
+        cards: u8,
     }
 
     struct Round {
         dealer: address,
         winer: address,
         placed: u8, // Number of players that participated
+        player0: Player,
+        player1: Player,
+        player2: Player,
+        player3: Player,
     }
 
     // (round_index, round)
     mapping rounds: u32 => Round;
-    // (round_index, player_address)
-    mapping players: u32 => Players;
 
     // Dealer start the new round with a random seed to shuffling the cards.
     transition new_round(round_index: u32, dealer: address, seed: u64) -> RandomSeed {
@@ -70,13 +70,22 @@ program texasholdem.aleo {
             dealer: dealer,
             winer: dealer,
             placed: 0u8,
-        });
-
-        Mapping::set(players, round_index, Players {
-            player0: dealer,
-            player1: dealer,
-            player2: dealer,
-            player3: dealer,
+            player0: Player {
+                name: dealer,
+                cards: 0u8,
+            },
+            player1: Player {
+                name: dealer,
+                cards: 0u8,
+            },
+            player2: Player {
+                name: dealer,
+                cards: 0u8,
+            },
+            player3: Player {
+                name: dealer,
+                cards: 0u8,
+            },
         });
     }
 
@@ -94,47 +103,64 @@ program texasholdem.aleo {
         return random_seed then finalize(self.caller, round_index, seed);
     }
 
-    finalize place_bets(player: address, round_index: u32, seed: u64) {
+    finalize place_bets(player_id: address, round_index: u32, seed: u64) {
         let round: Round = Mapping::get(rounds, round_index);
         assert(round.placed >= 0u8 && round.placed <= 3u8);
         let placed: u8 = round.placed;
-        Mapping::set(rounds, round_index, Round {
-            dealer: round.dealer,
-            winer: round.winer,
-            placed: placed + 1u8,
-        });
-
-        let player_list: Players = Mapping::get(players, round_index);
         if placed == 0u8 {
-            Mapping::set(players, round_index, Players {
-                player0: player,
-                player1: player_list.player1,
-                player2: player_list.player2,
-                player3: player_list.player3,
+            Mapping::set(rounds, round_index, Round {
+                dealer: round.dealer,
+                winer: round.winer,
+                placed: placed + 1u8,
+                player0: Player {
+                    name: player_id,
+                    cards: 0u8,
+                },
+                player1: round.player1,
+                player2: round.player2,
+                player3: round.player3,
             });
         }
         if placed == 1u8 {
-            Mapping::set(players, round_index, Players {
-                player0: player_list.player0,
-                player1: player,
-                player2: player_list.player2,
-                player3: player_list.player3,
+            Mapping::set(rounds, round_index, Round {
+                dealer: round.dealer,
+                winer: round.winer,
+                placed: placed + 1u8,
+                player0: round.player0,
+                player1: Player {
+                    name: player_id,
+                    cards: 0u8,
+                },
+                player2: round.player2,
+                player3: round.player3,
             });
         }
         if placed == 2u8 {
-            Mapping::set(players, round_index, Players {
-                player0: player_list.player0,
-                player1: player_list.player1,
-                player2: player,
-                player3: player_list.player3,
+            Mapping::set(rounds, round_index, Round {
+                dealer: round.dealer,
+                winer: round.winer,
+                placed: placed + 1u8,
+                player0: round.player0,
+                player1: round.player1,
+                player2: Player {
+                    name: player_id,
+                    cards: 0u8,
+                },
+                player3: round.player3,
             });
         }
         if placed == 3u8 {
-            Mapping::set(players, round_index, Players {
-                player0: player_list.player0,
-                player1: player_list.player1,
-                player2: player_list.player2,
-                player3: player,
+            Mapping::set(rounds, round_index, Round {
+                dealer: round.dealer,
+                winer: round.winer,
+                placed: placed + 1u8,
+                player0: round.player0,
+                player1: round.player1,
+                player2: round.player2,
+                player3: Player {
+                    name: player_id,
+                    cards: 0u8,
+                },
             });
         }
     }
@@ -150,7 +176,8 @@ program texasholdem.aleo {
         assert_eq(round_index, drsd.round);
 
         // Use random seed generating cards.
-        let (cards0, cards1, cards2, cards3, cards4, cards5, cards6): (u64, u64, u64, u64, u64, u64, u64) = shuffle_cards(drs0.seed, drs1.seed, drs2.seed, drs3.seed, drsd.seed);
+        let (cards0, cards1, cards2, cards3, cards4, cards5, cards6): (u64, u64, u64, u64, u64, u64, u64) = 
+        shuffle_cards(drs0.seed, drs1.seed, drs2.seed, drs3.seed, drsd.seed);
 
         // Since only dealer can use record, self.caller must be dealer.
         let card_list: CardList = CardList {
@@ -178,20 +205,146 @@ program texasholdem.aleo {
 
         // Check all providers matches players.
         let matched: u8 = 0u8;
-        let player_list: Players = Mapping::get(players, round_index);
-        if player0 == player_list.player0 || player0 == player_list.player1 || player0 == player_list.player2 || player0 == player_list.player3 {
+        if player0 == round.player0.name || player0 == round.player1.name || player0 == round.player2.name || player0 == round.player3.name {
             matched += 1u8;
         }
-        if player1 == player_list.player0 || player1 == player_list.player1 || player1 == player_list.player2 || player1 == player_list.player3 {
+        if player1 == round.player0.name || player1 == round.player1.name || player1 == round.player2.name || player1 == round.player3.name {
             matched += 1u8;
         }
-        if player2 == player_list.player0 || player2 == player_list.player1 || player2 == player_list.player2 || player2 == player_list.player3 {
+        if player2 == round.player0.name || player2 == round.player1.name || player2 == round.player2.name || player2 == round.player3.name {
             matched += 1u8;
         }
-        if player3 == player_list.player0 || player3 == player_list.player1 || player3 == player_list.player2 || player3 == player_list.player3 {
+        if player3 == round.player0.name || player3 == round.player1.name || player3 == round.player2.name || player3 == round.player3.name {
             matched += 1u8;
         }
         assert_eq(matched, 4u8);
+    }
+
+    transition deal_the_hand(round_index: u32, card_list: CardList, player: address) -> (CardList, Card) {
+        let position: u8 = card_list.position;
+        assert(position >= 0u8 && position < 51u8);
+
+        let cards: u64 = 0u64;
+        if position >= 0u8 && position <= 7u8 {
+            cards = card_list.cards0;
+        }
+        if position >= 8u8 && position <= 15u8 {
+            cards = card_list.cards1;
+        }
+        if position >= 16u8 && position <= 23u8 {
+            cards = card_list.cards2;
+        }
+        if position >= 24u8 && position <= 31u8 {
+            cards = card_list.cards3;
+        }
+        if position >= 32u8 && position <= 39u8 {
+            cards = card_list.cards4;
+        }
+        if position>= 40u8 && position <= 47u8 {
+            cards = card_list.cards5;
+        }
+        if position >= 48u8 && position <= 51u8 {
+            cards = card_list.cards6;
+        }
+
+        let i: u8 = position % 8u8;
+
+        let card_id: u64 = obtain_byte(cards, i);
+
+        let new_card_list: CardList = CardList {
+            owner: card_list.owner,
+            cards0: card_list.cards0,
+            cards1: card_list.cards1,
+            cards2: card_list.cards2,
+            cards3: card_list.cards3,
+            cards4: card_list.cards4,
+            cards5: card_list.cards5,
+            cards6: card_list.cards6,
+            position: position + 1u8,
+        };
+
+        let hole_card: Card = Card {
+            owner: player,
+            id: card_id,
+        };
+
+        return (new_card_list, hole_card) then finalize(round_index, player, position + 1u8);
+    }
+
+    finalize deal_the_hand(round_index: u32, player_id: address, position: u8) {
+        let round: Round = Mapping::get(rounds, round_index);
+        // All player must be placed.
+        assert_eq(round.placed, 4u8);
+        // Each player has 2 hole cards.
+        assert(position >= 1u8 && position <= 8u8);
+        assert(round.player0.cards >= 0u8 && round.player0.cards <= 1u8);
+        assert(round.player1.cards >= 0u8 && round.player1.cards <= 1u8);
+        assert(round.player2.cards >= 0u8 && round.player2.cards <= 1u8);
+        assert(round.player3.cards >= 0u8 && round.player3.cards <= 1u8);
+        // Only participate can have the cards.
+        assert(player_id == round.player0.name || player_id == round.player1.name || player_id == round.player2.name || player_id == round.player3.name);
+
+        // Make sure player get the hole cards in order.
+        if position == 1u8 || position == 5u8 {
+            assert(player_id == round.player0.name);
+            Mapping::set(rounds, round_index, Round {
+                dealer: round.dealer,
+                winer: round.winer,
+                placed: round.placed,
+                player0: Player {
+                    name: round.player0.name,
+                    cards: round.player0.cards + 1u8,
+                },
+                player1: round.player1,
+                player2: round.player2,
+                player3: round.player3,
+            });
+        }
+        if position == 2u8 || position == 6u8 {
+            assert(player_id == round.player1.name);
+            Mapping::set(rounds, round_index, Round {
+                dealer: round.dealer,
+                winer: round.winer,
+                placed: round.placed,
+                player0: round.player0,
+                player1: Player {
+                    name: round.player1.name,
+                    cards: round.player1.cards + 1u8,
+                },
+                player2: round.player2,
+                player3: round.player3,
+            });
+        }
+        if position == 3u8 || position == 7u8 {
+            assert(player_id == round.player2.name);
+            Mapping::set(rounds, round_index, Round {
+                dealer: round.dealer,
+                winer: round.winer,
+                placed: round.placed,
+                player0: round.player0,
+                player1: round.player1,
+                player2: Player {
+                    name: round.player1.name,
+                    cards: round.player1.cards + 1u8,
+                },
+                player3: round.player3,
+            });
+        }
+        if position == 4u8 || position == 8u8 {
+            assert(player_id == round.player3.name);
+            Mapping::set(rounds, round_index, Round {
+                dealer: round.dealer,
+                winer: round.winer,
+                placed: round.placed,
+                player0: round.player0,
+                player1: round.player1,
+                player2: round.player2,
+                player3: Player {
+                    name: round.player3.name,
+                    cards: round.player3.cards + 1u8,
+                },
+            });
+        }
     }
 
     /// Inline functions
@@ -229,69 +382,55 @@ program texasholdem.aleo {
             // [0~7], [8~15], [16~23], [24~31], [32~39], [40~47], [48, 51]
             let left: u64 = 0u64;
             let right: u64 = 0u64;
-            let l_idx: u8 = 0u8;
-            let r_idx: u8 = 0u8;
 
             // Find target two cards by i, j.
             if i >= 0u8 && i <= 7u8 {
                 left = cards0;
-                l_idx = i;
             }
             if i >= 8u8 && i <= 15u8 {
                 left = cards1;
-                l_idx = i.mod(8u8);
             }
             if i >= 16u8 && i <= 23u8 {
                 left = cards2;
-                l_idx = i.mod(8u8);
             }
             if i >= 24u8 && i <= 31u8 {
                 left = cards3;
-                l_idx = i.mod(8u8);
             }
             if i >= 32u8 && i <= 39u8 {
                 left = cards4;
-                i = i.mod(8u8);
             }
             if i>= 40u8 && i <= 47u8 {
                 left = cards5;
-                l_idx = i.mod(8u8);
             }
             if i >= 48u8 && i <= 51u8 {
                 left = cards6;
-                l_idx = i.mod(8u8);
             }
 
             if j >= 0u8 && j <= 7u8 {
                 right = cards0;
-                r_idx = j;
             }
             if j >= 8u8 && j <= 15u8 {
                 right = cards1;
-                r_idx = j.mod(8u8);
             }
             if j >= 16u8 && j <= 23u8 {
                 right = cards2;
-                r_idx = j.mod(8u8);
             }
             if j >= 24u8 && j <= 31u8 {
                 right = cards3;
-                r_idx = j.mod(8u8);
             }
             if j >= 32u8 && j <= 39u8 {
                 right = cards4;
-                r_idx = j.mod(8u8);
             }
             if j>= 40u8 && j <= 47u8 {
                 right = cards5;
-                r_idx = j.mod(8u8);
             }
             if j >= 48u8 && j <= 51u8 {
                 right = cards6;
-                r_idx = j.mod(8u8);
             }
 
             // Do the swap
+            let l_idx: u8 = i.mod(8u8);
+            let r_idx: u8 = j.mod(8u8);
             let (new_left, new_right): (u64, u64) = swap_bits(left, right, l_idx, r_idx);
 
             // Update the results.
@@ -345,8 +484,8 @@ program texasholdem.aleo {
 
     // Swap 8 bits for two u64 by index
     inline swap_bits(a: u64, b: u64, l: u8, r: u8) -> (u64, u64) {
-        assert(l < 8u8);
-        assert(r < 8u8);
+        assert(l >= 0u8 && l < 8u8);
+        assert(r >= 0u8 && r < 8u8);
 
         let a_shift: u8 = 8u8 * (7u8 - l);
         let a_mask: u64 = 255u64 << a_shift;
@@ -366,6 +505,17 @@ program texasholdem.aleo {
         let new_b: u64 = b_left | b_right;
 
         return (new_a, new_b);
+    }
+
+    // Obtain the byte from u64 by index
+    // For now, Leo can't downcast from u64 to u8, so we just as u64 for one byte.
+    inline obtain_byte(a: u64, i: u8) -> u64 {
+        assert(i >= 0u8 && i < 8u8);
+        let shift_amount: u8 = (7u8 - i) * 8u8;
+        let mask: u64 = 255u64 << shift_amount;
+
+        let ret: u64 = (a & mask) >> shift_amount;
+        return ret;
     }
 
 }
