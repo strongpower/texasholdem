@@ -33,6 +33,11 @@ struct Round:
     player1 as Player;
     player2 as Player;
     player3 as Player;
+    flop0 as u64;
+    flop1 as u64;
+    flop2 as u64;
+    turn as u64;
+    river as u64;
 
 
 mapping rounds:
@@ -59,7 +64,7 @@ finalize new_round:
     cast r1 0u8 into r5 as Player;
     cast r1 0u8 into r6 as Player;
     cast r1 0u8 into r7 as Player;
-    cast r1 r1 0u8 r4 r5 r6 r7 into r8 as Round;
+    cast r1 r1 0u8 r4 r5 r6 r7 255u64 255u64 255u64 255u64 255u64 into r8 as Round;
     set r8 into rounds[r0];
 
 
@@ -85,22 +90,22 @@ finalize place_bets:
     is.eq r3.placed 0u8 into r7;
     add r3.placed 1u8 into r8;
     cast r0 0u8 into r9 as Player;
-    cast r3.dealer r3.winer r8 r9 r3.player1 r3.player2 r3.player3 into r10 as Round;
+    cast r3.dealer r3.winer r8 r9 r3.player1 r3.player2 r3.player3 r3.flop0 r3.flop1 r3.flop2 r3.turn r3.river into r10 as Round;
     set r10 into rounds[r1];
     is.eq r3.placed 1u8 into r11;
     add r3.placed 1u8 into r12;
     cast r0 0u8 into r13 as Player;
-    cast r3.dealer r3.winer r12 r3.player0 r13 r3.player2 r3.player3 into r14 as Round;
+    cast r3.dealer r3.winer r12 r3.player0 r13 r3.player2 r3.player3 r3.flop0 r3.flop1 r3.flop2 r3.turn r3.river into r14 as Round;
     set r14 into rounds[r1];
     is.eq r3.placed 2u8 into r15;
     add r3.placed 1u8 into r16;
     cast r0 0u8 into r17 as Player;
-    cast r3.dealer r3.winer r16 r3.player0 r3.player1 r17 r3.player3 into r18 as Round;
+    cast r3.dealer r3.winer r16 r3.player0 r3.player1 r17 r3.player3 r3.flop0 r3.flop1 r3.flop2 r3.turn r3.river into r18 as Round;
     set r18 into rounds[r1];
     is.eq r3.placed 3u8 into r19;
     add r3.placed 1u8 into r20;
     cast r0 0u8 into r21 as Player;
-    cast r3.dealer r3.winer r20 r3.player0 r3.player1 r3.player2 r21 into r22 as Round;
+    cast r3.dealer r3.winer r20 r3.player0 r3.player1 r3.player2 r21 r3.flop0 r3.flop1 r3.flop2 r3.turn r3.river into r22 as Round;
     set r22 into rounds[r1];
 
 
@@ -7668,6 +7673,10 @@ finalize shuffling:
 
 
 
+
+
+
+
 function deal_the_hand:
     input r0 as u32.private;
     input r1 as CardList.record;
@@ -7766,7 +7775,7 @@ finalize deal_the_hand:
     assert.eq r31 true;
     add r3.player0.cards 1u8 into r32;
     cast r3.player0.name r32 into r33 as Player;
-    cast r3.dealer r3.winer r3.placed r33 r3.player1 r3.player2 r3.player3 into r34 as Round;
+    cast r3.dealer r3.winer r3.placed r33 r3.player1 r3.player2 r3.player3 r3.flop0 r3.flop1 r3.flop2 r3.turn r3.river into r34 as Round;
     set r34 into rounds[r0];
     is.eq r2 2u8 into r35;
     is.eq r2 6u8 into r36;
@@ -7777,7 +7786,7 @@ finalize deal_the_hand:
     assert.eq r40 true;
     add r3.player1.cards 1u8 into r41;
     cast r3.player1.name r41 into r42 as Player;
-    cast r3.dealer r3.winer r3.placed r3.player0 r42 r3.player2 r3.player3 into r43 as Round;
+    cast r3.dealer r3.winer r3.placed r3.player0 r42 r3.player2 r3.player3 r3.flop0 r3.flop1 r3.flop2 r3.turn r3.river into r43 as Round;
     set r43 into rounds[r0];
     is.eq r2 3u8 into r44;
     is.eq r2 7u8 into r45;
@@ -7788,7 +7797,7 @@ finalize deal_the_hand:
     assert.eq r49 true;
     add r3.player1.cards 1u8 into r50;
     cast r3.player1.name r50 into r51 as Player;
-    cast r3.dealer r3.winer r3.placed r3.player0 r3.player1 r51 r3.player3 into r52 as Round;
+    cast r3.dealer r3.winer r3.placed r3.player0 r3.player1 r51 r3.player3 r3.flop0 r3.flop1 r3.flop2 r3.turn r3.river into r52 as Round;
     set r52 into rounds[r0];
     is.eq r2 4u8 into r53;
     is.eq r2 8u8 into r54;
@@ -7799,5 +7808,144 @@ finalize deal_the_hand:
     assert.eq r58 true;
     add r3.player3.cards 1u8 into r59;
     cast r3.player3.name r59 into r60 as Player;
-    cast r3.dealer r3.winer r3.placed r3.player0 r3.player1 r3.player2 r60 into r61 as Round;
+    cast r3.dealer r3.winer r3.placed r3.player0 r3.player1 r3.player2 r60 r3.flop0 r3.flop1 r3.flop2 r3.turn r3.river into r61 as Round;
     set r61 into rounds[r0];
+
+
+function flop:
+    input r0 as u32.private;
+    input r1 as CardList.record;
+    gte r1.position 8u8 into r2;
+    lte r1.position 10u8 into r3;
+    and r2 r3 into r4;
+    assert.eq r4 true;
+    gte r1.position 0u8 into r5;
+    lte r1.position 7u8 into r6;
+    and r5 r6 into r7;
+    ternary r7 r1.cards0 0u64 into r8;
+    gte r1.position 8u8 into r9;
+    lte r1.position 15u8 into r10;
+    and r9 r10 into r11;
+    ternary r11 r1.cards1 r8 into r12;
+    gte r1.position 16u8 into r13;
+    lte r1.position 23u8 into r14;
+    and r13 r14 into r15;
+    ternary r15 r1.cards2 r12 into r16;
+    gte r1.position 24u8 into r17;
+    lte r1.position 31u8 into r18;
+    and r17 r18 into r19;
+    ternary r19 r1.cards3 r16 into r20;
+    gte r1.position 32u8 into r21;
+    lte r1.position 39u8 into r22;
+    and r21 r22 into r23;
+    ternary r23 r1.cards4 r20 into r24;
+    gte r1.position 40u8 into r25;
+    lte r1.position 47u8 into r26;
+    and r25 r26 into r27;
+    ternary r27 r1.cards5 r24 into r28;
+    gte r1.position 48u8 into r29;
+    lte r1.position 51u8 into r30;
+    and r29 r30 into r31;
+    ternary r31 r1.cards6 r28 into r32;
+    rem r1.position 8u8 into r33;
+    gte r33 0u8 into r34;
+    lt r33 8u8 into r35;
+    and r34 r35 into r36;
+    assert.eq r36 true;
+    sub 7u8 r33 into r37;
+    mul r37 8u8 into r38;
+    shl 255u64 r38 into r39;
+    and r32 r39 into r40;
+    shr r40 r38 into r41;
+    add r1.position 1u8 into r42;
+    cast r1.owner r1.cards0 r1.cards1 r1.cards2 r1.cards3 r1.cards4 r1.cards5 r1.cards6 r42 into r43 as CardList.record;
+    output r43 as CardList.record;
+
+    finalize r0 r41;
+
+finalize flop:
+    input r0 as u32.public;
+    input r1 as u64.public;
+    get rounds[r0] into r2;
+    assert.eq r2.placed 4u8;
+    is.eq r2.turn 255u64 into r3;
+    assert.eq r3 true;
+    is.eq r2.river 255u64 into r4;
+    assert.eq r4 true;
+    is.eq r2.flop0 255u64 into r5;
+    cast r2.dealer r2.winer r2.placed r2.player0 r2.player1 r2.player2 r2.player3 r1 r2.flop1 r2.flop2 r2.turn r2.river into r6 as Round;
+    set r6 into rounds[r0];
+    is.eq r2.flop1 255u64 into r7;
+    cast r2.dealer r2.winer r2.placed r2.player0 r2.player1 r2.player2 r2.player3 r2.flop0 r1 r2.flop2 r2.turn r2.river into r8 as Round;
+    set r8 into rounds[r0];
+    is.eq r2.flop2 255u64 into r9;
+    cast r2.dealer r2.winer r2.placed r2.player0 r2.player1 r2.player2 r2.player3 r2.flop0 r2.flop1 r1 r2.turn r2.river into r10 as Round;
+    set r10 into rounds[r0];
+
+
+function turn:
+    input r0 as u32.private;
+    input r1 as CardList.record;
+    is.eq r1.position 11u8 into r2;
+    assert.eq r2 true;
+    gte r1.position 0u8 into r3;
+    lte r1.position 7u8 into r4;
+    and r3 r4 into r5;
+    ternary r5 r1.cards0 0u64 into r6;
+    gte r1.position 8u8 into r7;
+    lte r1.position 15u8 into r8;
+    and r7 r8 into r9;
+    ternary r9 r1.cards1 r6 into r10;
+    gte r1.position 16u8 into r11;
+    lte r1.position 23u8 into r12;
+    and r11 r12 into r13;
+    ternary r13 r1.cards2 r10 into r14;
+    gte r1.position 24u8 into r15;
+    lte r1.position 31u8 into r16;
+    and r15 r16 into r17;
+    ternary r17 r1.cards3 r14 into r18;
+    gte r1.position 32u8 into r19;
+    lte r1.position 39u8 into r20;
+    and r19 r20 into r21;
+    ternary r21 r1.cards4 r18 into r22;
+    gte r1.position 40u8 into r23;
+    lte r1.position 47u8 into r24;
+    and r23 r24 into r25;
+    ternary r25 r1.cards5 r22 into r26;
+    gte r1.position 48u8 into r27;
+    lte r1.position 51u8 into r28;
+    and r27 r28 into r29;
+    ternary r29 r1.cards6 r26 into r30;
+    rem r1.position 8u8 into r31;
+    gte r31 0u8 into r32;
+    lt r31 8u8 into r33;
+    and r32 r33 into r34;
+    assert.eq r34 true;
+    sub 7u8 r31 into r35;
+    mul r35 8u8 into r36;
+    shl 255u64 r36 into r37;
+    and r30 r37 into r38;
+    shr r38 r36 into r39;
+    add r1.position 1u8 into r40;
+    cast r1.owner r1.cards0 r1.cards1 r1.cards2 r1.cards3 r1.cards4 r1.cards5 r1.cards6 r40 into r41 as CardList.record;
+    output r41 as CardList.record;
+
+    finalize r0 r39;
+
+finalize turn:
+    input r0 as u32.public;
+    input r1 as u64.public;
+    get rounds[r0] into r2;
+    assert.eq r2.placed 4u8;
+    is.neq r2.flop0 255u64 into r3;
+    assert.eq r3 true;
+    is.neq r2.flop1 255u64 into r4;
+    assert.eq r4 true;
+    is.neq r2.flop2 255u64 into r5;
+    assert.eq r5 true;
+    is.eq r2.turn 255u64 into r6;
+    assert.eq r6 true;
+    is.eq r2.river 255u64 into r7;
+    assert.eq r7 true;
+    cast r2.dealer r2.winer r2.placed r2.player0 r2.player1 r2.player2 r2.player3 r2.flop0 r2.flop1 r2.flop2 r1 r2.river into r8 as Round;
+    set r8 into rounds[r0];

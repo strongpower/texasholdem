@@ -43,6 +43,11 @@ program texasholdem.aleo {
         player1: Player,
         player2: Player,
         player3: Player,
+        flop0: u64,
+        flop1: u64,
+        flop2: u64,
+        turn: u64,
+        river: u64,
     }
 
     // (round_index, round)
@@ -86,6 +91,11 @@ program texasholdem.aleo {
                 name: dealer,
                 cards: 0u8,
             },
+            flop0: 255u64,
+            flop1: 255u64,
+            flop2: 255u64,
+            turn: 255u64,
+            river: 255u64,
         });
     }
 
@@ -119,6 +129,11 @@ program texasholdem.aleo {
                 player1: round.player1,
                 player2: round.player2,
                 player3: round.player3,
+                flop0: round.flop0,
+                flop1: round.flop1,
+                flop2: round.flop2,
+                turn: round.turn,
+                river: round.river,
             });
         }
         if placed == 1u8 {
@@ -133,6 +148,11 @@ program texasholdem.aleo {
                 },
                 player2: round.player2,
                 player3: round.player3,
+                flop0: round.flop0,
+                flop1: round.flop1,
+                flop2: round.flop2,
+                turn: round.turn,
+                river: round.river,
             });
         }
         if placed == 2u8 {
@@ -147,6 +167,11 @@ program texasholdem.aleo {
                     cards: 0u8,
                 },
                 player3: round.player3,
+                flop0: round.flop0,
+                flop1: round.flop1,
+                flop2: round.flop2,
+                turn: round.turn,
+                river: round.river,
             });
         }
         if placed == 3u8 {
@@ -161,6 +186,11 @@ program texasholdem.aleo {
                     name: player_id,
                     cards: 0u8,
                 },
+                flop0: round.flop0,
+                flop1: round.flop1,
+                flop2: round.flop2,
+                turn: round.turn,
+                river: round.river,
             });
         }
     }
@@ -224,32 +254,7 @@ program texasholdem.aleo {
         let position: u8 = card_list.position;
         assert(position >= 0u8 && position < 51u8);
 
-        let cards: u64 = 0u64;
-        if position >= 0u8 && position <= 7u8 {
-            cards = card_list.cards0;
-        }
-        if position >= 8u8 && position <= 15u8 {
-            cards = card_list.cards1;
-        }
-        if position >= 16u8 && position <= 23u8 {
-            cards = card_list.cards2;
-        }
-        if position >= 24u8 && position <= 31u8 {
-            cards = card_list.cards3;
-        }
-        if position >= 32u8 && position <= 39u8 {
-            cards = card_list.cards4;
-        }
-        if position>= 40u8 && position <= 47u8 {
-            cards = card_list.cards5;
-        }
-        if position >= 48u8 && position <= 51u8 {
-            cards = card_list.cards6;
-        }
-
-        let i: u8 = position % 8u8;
-
-        let card_id: u64 = obtain_byte(cards, i);
+        let card_id: u64 = choose_card(position, card_list.cards0, card_list.cards1, card_list.cards2, card_list.cards3, card_list.cards4, card_list.cards5, card_list.cards6);
 
         let new_card_list: CardList = CardList {
             owner: card_list.owner,
@@ -298,6 +303,11 @@ program texasholdem.aleo {
                 player1: round.player1,
                 player2: round.player2,
                 player3: round.player3,
+                flop0: round.flop0,
+                flop1: round.flop1,
+                flop2: round.flop2,
+                turn: round.turn,
+                river: round.river,
             });
         }
         if position == 2u8 || position == 6u8 {
@@ -313,6 +323,11 @@ program texasholdem.aleo {
                 },
                 player2: round.player2,
                 player3: round.player3,
+                flop0: round.flop0,
+                flop1: round.flop1,
+                flop2: round.flop2,
+                turn: round.turn,
+                river: round.river,
             });
         }
         if position == 3u8 || position == 7u8 {
@@ -328,6 +343,11 @@ program texasholdem.aleo {
                     cards: round.player1.cards + 1u8,
                 },
                 player3: round.player3,
+                flop0: round.flop0,
+                flop1: round.flop1,
+                flop2: round.flop2,
+                turn: round.turn,
+                river: round.river,
             });
         }
         if position == 4u8 || position == 8u8 {
@@ -343,8 +363,147 @@ program texasholdem.aleo {
                     name: round.player3.name,
                     cards: round.player3.cards + 1u8,
                 },
+                flop0: round.flop0,
+                flop1: round.flop1,
+                flop2: round.flop2,
+                turn: round.turn,
+                river: round.river,
             });
         }
+    }
+
+    transition flop(round_index: u32, card_list: CardList) -> CardList {
+        let position: u8 = card_list.position;
+        assert(position >= 8u8 && position <= 10u8);
+
+        let card_id: u64 = choose_card(position, card_list.cards0, card_list.cards1, card_list.cards2, card_list.cards3, card_list.cards4, card_list.cards5, card_list.cards6);
+
+        let new_card_list: CardList = CardList {
+            owner: card_list.owner,
+            cards0: card_list.cards0,
+            cards1: card_list.cards1,
+            cards2: card_list.cards2,
+            cards3: card_list.cards3,
+            cards4: card_list.cards4,
+            cards5: card_list.cards5,
+            cards6: card_list.cards6,
+            position: position + 1u8,
+        };
+
+        return new_card_list then finalize(round_index, card_id);
+    }
+
+    finalize flop(round_index: u32, card: u64) {
+        let round: Round = Mapping::get(rounds, round_index);
+        // All player must be placed.
+        assert_eq(round.placed, 4u8);
+        assert(round.turn == 255u64);
+        assert(round.river == 255u64);
+
+        let floped: u8 = 0u8;
+        if round.flop0 == 255u64 {
+            Mapping::set(rounds, round_index, Round {
+                dealer: round.dealer,
+                winer: round.winer,
+                placed: round.placed,
+                player0: round.player0,
+                player1: round.player1,
+                player2: round.player2,
+                player3: round.player3,
+                flop0: card,
+                flop1: round.flop1,
+                flop2: round.flop2,
+                turn: round.turn,
+                river: round.river,
+            });
+            return;
+        }
+        if round.flop1 == 255u64 {
+            Mapping::set(rounds, round_index, Round {
+                dealer: round.dealer,
+                winer: round.winer,
+                placed: round.placed,
+                player0: round.player0,
+                player1: round.player1,
+                player2: round.player2,
+                player3: round.player3,
+                flop0: round.flop0,
+                flop1: card,
+                flop2: round.flop2,
+                turn: round.turn,
+                river: round.river,
+            });
+            return;
+        }
+        if round.flop2 == 255u64 {
+            Mapping::set(rounds, round_index, Round {
+                dealer: round.dealer,
+                winer: round.winer,
+                placed: round.placed,
+                player0: round.player0,
+                player1: round.player1,
+                player2: round.player2,
+                player3: round.player3,
+                flop0: round.flop0,
+                flop1: round.flop1,
+                flop2: card,
+                turn: round.turn,
+                river: round.river,
+            });
+        }
+    }
+
+    transition turn(round_index: u32, card_list: CardList) -> CardList {
+        let position: u8 = card_list.position;
+        assert(position == 11u8);
+
+        let card_id: u64 = choose_card(position, card_list.cards0, card_list.cards1, card_list.cards2, card_list.cards3, card_list.cards4, card_list.cards5, card_list.cards6);
+
+        let new_card_list: CardList = CardList {
+            owner: card_list.owner,
+            cards0: card_list.cards0,
+            cards1: card_list.cards1,
+            cards2: card_list.cards2,
+            cards3: card_list.cards3,
+            cards4: card_list.cards4,
+            cards5: card_list.cards5,
+            cards6: card_list.cards6,
+            position: position + 1u8,
+        };
+
+        return new_card_list then finalize(round_index, card_id);
+    }
+
+    finalize turn(round_index: u32, card: u64) {
+        let round: Round = Mapping::get(rounds, round_index);
+        // All player must be placed.
+        assert_eq(round.placed, 4u8);
+
+        // Make sure flopped!
+        assert(round.flop0 != 255u64);
+        assert(round.flop1 != 255u64);
+        assert(round.flop2 != 255u64);
+
+        // Make sure not turned!
+        assert(round.turn == 255u64);
+
+        // Make sure not rivered!
+        assert(round.river == 255u64);
+
+        Mapping::set(rounds, round_index, Round {
+            dealer: round.dealer,
+            winer: round.winer,
+            placed: round.placed,
+            player0: round.player0,
+            player1: round.player1,
+            player2: round.player2,
+            player3: round.player3,
+            flop0: round.flop0,
+            flop1: round.flop1,
+            flop2: round.flop2,
+            turn: card,
+            river: round.river,
+        });
     }
 
     /// Inline functions
@@ -507,6 +666,33 @@ program texasholdem.aleo {
         return (new_a, new_b);
     }
 
+    // Choose cards from multiple cards by position.
+    inline choose_cards(position: u8, cards0: u64, cards1: u64, cards2: u64, cards3: u64, cards4: u64, cards5: u64, cards6: u64) -> u64 {
+        let cards: u64 = 0u64;
+        if position >= 0u8 && position <= 7u8 {
+            cards = cards0;
+        }
+        if position >= 8u8 && position <= 15u8 {
+            cards = cards1;
+        }
+        if position >= 16u8 && position <= 23u8 {
+            cards = cards2;
+        }
+        if position >= 24u8 && position <= 31u8 {
+            cards = cards3;
+        }
+        if position >= 32u8 && position <= 39u8 {
+            cards = cards4;
+        }
+        if position>= 40u8 && position <= 47u8 {
+            cards = cards5;
+        }
+        if position >= 48u8 && position <= 51u8 {
+            cards = cards6;
+        }
+        return cards;
+    }
+
     // Obtain the byte from u64 by index
     // For now, Leo can't downcast from u64 to u8, so we just as u64 for one byte.
     inline obtain_byte(a: u64, i: u8) -> u64 {
@@ -518,4 +704,11 @@ program texasholdem.aleo {
         return ret;
     }
 
+    // Choose one card from cards by position
+    inline choose_card(position: u8, cards0: u64, cards1: u64, cards2: u64, cards3: u64, cards4: u64, cards5: u64, cards6: u64) -> u64 {
+        let cards: u64 = choose_cards(position, cards0, cards1, cards2, cards3, cards4, cards5, cards6);
+        let i: u8 = position % 8u8;
+        let card_id: u64 = obtain_byte(cards, i);
+        return card_id;
+    }
 }
