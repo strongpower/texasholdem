@@ -27,12 +27,19 @@ program texasholdem.aleo {
 
     record Card {
         owner: address,
+        round: u32,
         id: u64,
     }
 
     struct Player {
         name: address,
         cards: u8,
+        // Final hand of 5 cards.
+        hand0: u64,
+        hand1: u64,
+        hand2: u64,
+        hand3: u64,
+        hand4: u64,
     }
 
     struct Round {
@@ -54,7 +61,7 @@ program texasholdem.aleo {
     mapping rounds: u32 => Round;
 
     // Dealer start the new round with a random seed to shuffling the cards.
-    transition new_round(round_index: u32, dealer: address, seed: u64) -> RandomSeed {
+    transition new_round(public round_index: u32, public dealer: address, public seed: u64) -> RandomSeed {
         // Dealer must start the new round, and anyone can be the dealer.
         assert_eq(dealer, self.caller);
         let random_seed: RandomSeed = RandomSeed {
@@ -67,7 +74,7 @@ program texasholdem.aleo {
         return random_seed then finalize(round_index, dealer);
     }
 
-    finalize new_round(round_index: u32, dealer: address) {
+    finalize new_round(public round_index: u32, public dealer: address) {
         let contains: bool = Mapping::contains(rounds, round_index);
         assert(!contains);
 
@@ -78,18 +85,38 @@ program texasholdem.aleo {
             player0: Player {
                 name: dealer,
                 cards: 0u8,
+                hand0: 255u64,
+                hand1: 255u64,
+                hand2: 255u64,
+                hand3: 255u64,
+                hand4: 255u64,
             },
             player1: Player {
                 name: dealer,
                 cards: 0u8,
+                hand0: 255u64,
+                hand1: 255u64,
+                hand2: 255u64,
+                hand3: 255u64,
+                hand4: 255u64,
             },
             player2: Player {
                 name: dealer,
                 cards: 0u8,
+                hand0: 255u64,
+                hand1: 255u64,
+                hand2: 255u64,
+                hand3: 255u64,
+                hand4: 255u64,
             },
             player3: Player {
                 name: dealer,
                 cards: 0u8,
+                hand0: 255u64,
+                hand1: 255u64,
+                hand2: 255u64,
+                hand3: 255u64,
+                hand4: 255u64,
             },
             flop0: 255u64,
             flop1: 255u64,
@@ -101,7 +128,7 @@ program texasholdem.aleo {
 
     // Players place their bets to participate the round.
     // They provide a seed for dealer.
-    transition place_bets(round_index: u32, dealer: address, seed: u64) -> RandomSeed {
+    transition place_bets(public round_index: u32, public dealer: address, public seed: u64) -> RandomSeed {
         assert_neq(dealer, self.caller);
         let random_seed: RandomSeed = RandomSeed {
             owner: dealer,
@@ -113,7 +140,7 @@ program texasholdem.aleo {
         return random_seed then finalize(self.caller, round_index, seed);
     }
 
-    finalize place_bets(player_id: address, round_index: u32, seed: u64) {
+    finalize place_bets(public player_id: address, public round_index: u32, public seed: u64) {
         let round: Round = Mapping::get(rounds, round_index);
         assert(round.placed >= 0u8 && round.placed <= 3u8);
         let placed: u8 = round.placed;
@@ -125,6 +152,11 @@ program texasholdem.aleo {
                 player0: Player {
                     name: player_id,
                     cards: 0u8,
+                    hand0: round.player0.hand0,
+                    hand1: round.player0.hand1,
+                    hand2: round.player0.hand2,
+                    hand3: round.player0.hand3,
+                    hand4: round.player0.hand4,
                 },
                 player1: round.player1,
                 player2: round.player2,
@@ -145,6 +177,11 @@ program texasholdem.aleo {
                 player1: Player {
                     name: player_id,
                     cards: 0u8,
+                    hand0: round.player1.hand0,
+                    hand1: round.player1.hand1,
+                    hand2: round.player1.hand2,
+                    hand3: round.player1.hand3,
+                    hand4: round.player1.hand4
                 },
                 player2: round.player2,
                 player3: round.player3,
@@ -165,6 +202,11 @@ program texasholdem.aleo {
                 player2: Player {
                     name: player_id,
                     cards: 0u8,
+                    hand0: round.player2.hand0,
+                    hand1: round.player2.hand1,
+                    hand2: round.player2.hand2,
+                    hand3: round.player2.hand3,
+                    hand4: round.player2.hand4
                 },
                 player3: round.player3,
                 flop0: round.flop0,
@@ -185,6 +227,11 @@ program texasholdem.aleo {
                 player3: Player {
                     name: player_id,
                     cards: 0u8,
+                    hand0: round.player3.hand0,
+                    hand1: round.player3.hand1,
+                    hand2: round.player3.hand2,
+                    hand3: round.player3.hand3,
+                    hand4: round.player3.hand4
                 },
                 flop0: round.flop0,
                 flop1: round.flop1,
@@ -197,7 +244,7 @@ program texasholdem.aleo {
 
     // The dealer uses players' 4 seed and his own seed,
     // obtain a number that determine the order of 52 cards.
-    transition shuffling(round_index: u32, drs0: RandomSeed, drs1: RandomSeed, drs2: RandomSeed, drs3: RandomSeed, drsd: RandomSeed) -> CardList {
+    transition shuffling(public round_index: u32, drs0: RandomSeed, drs1: RandomSeed, drs2: RandomSeed, drs3: RandomSeed, drsd: RandomSeed) -> CardList {
         // Only same round's random seed can be used.
         assert_eq(round_index, drs0.round);
         assert_eq(round_index, drs1.round);
@@ -226,7 +273,7 @@ program texasholdem.aleo {
         return card_list then finalize(round_index, drs0.provider, drs1.provider, drs2.provider, drs3.provider, self.caller);
     }
 
-    finalize shuffling(round_index: u32, player0: address, player1: address, player2: address, player3: address, dealer: address) {
+    finalize shuffling(public round_index: u32, public player0: address, public player1: address, public player2: address, public player3: address, public dealer: address) {
         let round: Round = Mapping::get(rounds, round_index);
         // All player must be placed.
         assert_eq(round.placed, 4u8);
@@ -250,7 +297,7 @@ program texasholdem.aleo {
         assert_eq(matched, 4u8);
     }
 
-    transition deal_the_hand(round_index: u32, card_list: CardList, player: address) -> (CardList, Card) {
+    transition deal_the_hand(public round_index: u32, card_list: CardList, public player: address) -> (CardList, Card) {
         let position: u8 = card_list.position;
         assert(position >= 0u8 && position < 51u8);
 
@@ -270,22 +317,23 @@ program texasholdem.aleo {
 
         let hole_card: Card = Card {
             owner: player,
+            round: round_index,
             id: card_id,
         };
 
         return (new_card_list, hole_card) then finalize(round_index, player, position + 1u8);
     }
 
-    finalize deal_the_hand(round_index: u32, player_id: address, position: u8) {
+    finalize deal_the_hand(public round_index: u32, public player_id: address, public position: u8) {
         let round: Round = Mapping::get(rounds, round_index);
         // All player must be placed.
         assert_eq(round.placed, 4u8);
         // Each player has 2 hole cards.
         assert(position >= 1u8 && position <= 8u8);
-        assert(round.player0.cards >= 0u8 && round.player0.cards <= 1u8);
-        assert(round.player1.cards >= 0u8 && round.player1.cards <= 1u8);
-        assert(round.player2.cards >= 0u8 && round.player2.cards <= 1u8);
-        assert(round.player3.cards >= 0u8 && round.player3.cards <= 1u8);
+        assert(round.player0.cards == 0u8 || round.player0.cards == 1u8);
+        assert(round.player1.cards == 0u8 || round.player1.cards == 1u8);
+        assert(round.player2.cards == 0u8 || round.player2.cards == 1u8);
+        assert(round.player3.cards == 0u8 || round.player3.cards == 1u8);
         // Only participate can have the cards.
         assert(player_id == round.player0.name || player_id == round.player1.name || player_id == round.player2.name || player_id == round.player3.name);
 
@@ -299,6 +347,11 @@ program texasholdem.aleo {
                 player0: Player {
                     name: round.player0.name,
                     cards: round.player0.cards + 1u8,
+                    hand0: round.player0.hand0,
+                    hand1: round.player0.hand1,
+                    hand2: round.player0.hand2,
+                    hand3: round.player0.hand3,
+                    hand4: round.player0.hand4
                 },
                 player1: round.player1,
                 player2: round.player2,
@@ -320,6 +373,11 @@ program texasholdem.aleo {
                 player1: Player {
                     name: round.player1.name,
                     cards: round.player1.cards + 1u8,
+                    hand0: round.player1.hand0,
+                    hand1: round.player1.hand1,
+                    hand2: round.player1.hand2,
+                    hand3: round.player1.hand3,
+                    hand4: round.player1.hand4
                 },
                 player2: round.player2,
                 player3: round.player3,
@@ -341,6 +399,11 @@ program texasholdem.aleo {
                 player2: Player {
                     name: round.player1.name,
                     cards: round.player1.cards + 1u8,
+                    hand0: round.player2.hand0,
+                    hand1: round.player2.hand1,
+                    hand2: round.player2.hand2,
+                    hand3: round.player2.hand3,
+                    hand4: round.player2.hand4
                 },
                 player3: round.player3,
                 flop0: round.flop0,
@@ -362,6 +425,11 @@ program texasholdem.aleo {
                 player3: Player {
                     name: round.player3.name,
                     cards: round.player3.cards + 1u8,
+                    hand0: round.player3.hand0,
+                    hand1: round.player3.hand1,
+                    hand2: round.player3.hand2,
+                    hand3: round.player3.hand3,
+                    hand4: round.player3.hand4
                 },
                 flop0: round.flop0,
                 flop1: round.flop1,
@@ -372,7 +440,7 @@ program texasholdem.aleo {
         }
     }
 
-    transition flop(round_index: u32, card_list: CardList) -> CardList {
+    transition flop(public round_index: u32, card_list: CardList) -> CardList {
         let position: u8 = card_list.position;
         assert(position >= 8u8 && position <= 10u8);
 
@@ -393,7 +461,7 @@ program texasholdem.aleo {
         return new_card_list then finalize(round_index, card_id);
     }
 
-    finalize flop(round_index: u32, card: u64) {
+    finalize flop(public round_index: u32, public card: u64) {
         let round: Round = Mapping::get(rounds, round_index);
         // All player must be placed.
         assert_eq(round.placed, 4u8);
@@ -453,7 +521,7 @@ program texasholdem.aleo {
         }
     }
 
-    transition turn(round_index: u32, card_list: CardList) -> CardList {
+    transition turn(public round_index: u32, card_list: CardList) -> CardList {
         let position: u8 = card_list.position;
         assert(position == 11u8);
 
@@ -474,7 +542,7 @@ program texasholdem.aleo {
         return new_card_list then finalize(round_index, card_id);
     }
 
-    finalize turn(round_index: u32, card: u64) {
+    finalize turn(public round_index: u32, public card: u64) {
         let round: Round = Mapping::get(rounds, round_index);
         // All player must be placed.
         assert_eq(round.placed, 4u8);
@@ -506,8 +574,195 @@ program texasholdem.aleo {
         });
     }
 
-    /// Inline functions
+    transition river(public round_index: u32, card_list: CardList) -> CardList {
+        let position: u8 = card_list.position;
+        assert(position == 12u8);
 
+        let card_id: u64 = choose_card(position, card_list.cards0, card_list.cards1, card_list.cards2, card_list.cards3, card_list.cards4, card_list.cards5, card_list.cards6);
+
+        let new_card_list: CardList = CardList {
+            owner: card_list.owner,
+            cards0: card_list.cards0,
+            cards1: card_list.cards1,
+            cards2: card_list.cards2,
+            cards3: card_list.cards3,
+            cards4: card_list.cards4,
+            cards5: card_list.cards5,
+            cards6: card_list.cards6,
+            position: position + 1u8,
+        };
+
+        return new_card_list then finalize(round_index, card_id);
+    }
+
+    finalize river(public round_index: u32, public card: u64) {
+        let round: Round = Mapping::get(rounds, round_index);
+        // All player must be placed.
+        assert_eq(round.placed, 4u8);
+
+        // Make sure flopped!
+        assert(round.flop0 != 255u64);
+        assert(round.flop1 != 255u64);
+        assert(round.flop2 != 255u64);
+
+        // Make sure turned!
+        assert(round.turn != 255u64);
+
+        // Make sure not rivered!
+        assert(round.river == 255u64);
+
+        Mapping::set(rounds, round_index, Round {
+            dealer: round.dealer,
+            winer: round.winer,
+            placed: round.placed,
+            player0: round.player0,
+            player1: round.player1,
+            player2: round.player2,
+            player3: round.player3,
+            flop0: round.flop0,
+            flop1: round.flop1,
+            flop2: round.flop2,
+            turn: round.turn,
+            river: card,
+        });
+    }
+
+    transition showdown(public round_index: u32, card0: Card, card1: Card, public card2: u64, public card3: u64, public card4: u64) {
+        // Only same round cards are allowed!
+        assert_eq(round_index, card0.round);
+        assert_eq(round_index, card1.round);
+
+        // Make sure board cards are legal
+        assert(card2 >= 0u64 && card2 <= 51u64);
+        assert(card3 >= 0u64 && card3 <= 51u64);
+        assert(card4 >= 0u64 && card4 <= 51u64);
+
+        // Make sure each board card is unique
+        assert(card2 != card3);
+        assert(card2 != card4);
+        assert(card3 != card4);
+
+        return then finalize(round_index, self.caller, card0.id, card1.id, card2, card3, card4);
+    }
+
+    finalize showdown(public round_index: u32, public player: address, public card0: u64, public card1: u64, public card2: u64, public card3: u64, public card4: u64) {
+        let round: Round = Mapping::get(rounds, round_index);
+
+        // Make sure board cards within the community cards.
+        let matched: u8 = 0u8;
+        if card2 == round.flop0 || card2 == round.flop1 || card2 == round.flop2 || card2 == round.turn || card2 == round.river {
+            matched += 1u8;
+        }
+        if card3 == round.flop0 || card3 == round.flop1 || card3 == round.flop2 || card3 == round.turn || card3 == round.river {
+            matched += 1u8;
+        }
+        if card4 == round.flop0 || card4 == round.flop1 || card4 == round.flop2 || card4 == round.turn || card4 == round.river {
+            matched += 1u8;
+        }
+        assert_eq(matched, 3u8);
+
+        // Only after rivered, then showdown.
+        assert(round.river != 255u64);
+
+        if player == round.player0.name {
+            Mapping::set(rounds, round_index, Round {
+                dealer: round.dealer,
+                winer: round.winer,
+                placed: round.placed,
+                player0: Player {
+                    name: round.player0.name,
+                    cards: round.player0.cards,
+                    hand0: card0,
+                    hand1: card1,
+                    hand2: card2,
+                    hand3: card3,
+                    hand4: card4,
+                },
+                player1: round.player1,
+                player2: round.player2,
+                player3: round.player3,
+                flop0: round.flop0,
+                flop1: round.flop1,
+                flop2: round.flop2,
+                turn: round.turn,
+                river: round.river,
+            });
+        }
+        if player == round.player1.name {
+            Mapping::set(rounds, round_index, Round {
+                dealer: round.dealer,
+                winer: round.winer,
+                placed: round.placed,
+                player0: round.player0,
+                player1: Player {
+                    name: round.player1.name,
+                    cards: round.player1.cards,
+                    hand0: card0,
+                    hand1: card1,
+                    hand2: card2,
+                    hand3: card3,
+                    hand4: card4,
+                },
+                player2: round.player2,
+                player3: round.player3,
+                flop0: round.flop0,
+                flop1: round.flop1,
+                flop2: round.flop2,
+                turn: round.turn,
+                river: round.river,
+            });
+        }
+        if player == round.player2.name {
+            Mapping::set(rounds, round_index, Round {
+                dealer: round.dealer,
+                winer: round.winer,
+                placed: round.placed,
+                player0: round.player0,
+                player1: round.player1,
+                player2: Player {
+                    name: round.player2.name,
+                    cards: round.player2.cards,
+                    hand0: card0,
+                    hand1: card1,
+                    hand2: card2,
+                    hand3: card3,
+                    hand4: card4,
+                },
+                player3: round.player3,
+                flop0: round.flop0,
+                flop1: round.flop1,
+                flop2: round.flop2,
+                turn: round.turn,
+                river: round.river,
+            });
+        }
+        if player == round.player3.name {
+            Mapping::set(rounds, round_index, Round {
+                dealer: round.dealer,
+                winer: round.winer,
+                placed: round.placed,
+                player0: round.player0,
+                player1: round.player1,
+                player2: round.player2,
+                player3: Player {
+                    name: round.player3.name,
+                    cards: round.player3.cards,
+                    hand0: card0,
+                    hand1: card1,
+                    hand2: card2,
+                    hand3: card3,
+                    hand4: card4,
+                },
+                flop0: round.flop0,
+                flop1: round.flop1,
+                flop2: round.flop2,
+                turn: round.turn,
+                river: round.river,
+            });
+        }
+    }
+
+    /// Inline functions
     // Use Fisher–Yates shuffle algorithm.
     inline shuffle_cards(seed0: u64, seed1: u64, seed2: u64, seed3: u64, seed4: u64) -> (u64, u64, u64, u64, u64, u64, u64) {
         // Use input seeds, generating a new seed.
