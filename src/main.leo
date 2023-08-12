@@ -60,10 +60,11 @@ program texasholdem.aleo {
     // (round_index, round)
     mapping rounds: u32 => Round;
 
-    // Dealer start the new round with a random seed to shuffling the cards.
+    // The dealer start the new round with a random seed to shuffling the cards.
     transition new_round(public round_index: u32, public dealer: address, public seed: u64) -> RandomSeed {
-        // Dealer must start the new round, and anyone can be the dealer.
+        // The dealer must personally initiate a new round, and anyone can be the dealer.
         assert_eq(dealer, self.caller);
+
         let random_seed: RandomSeed = RandomSeed {
             owner: dealer,
             provider: dealer,
@@ -128,21 +129,24 @@ program texasholdem.aleo {
 
     // Players place their bets to participate the round.
     // They provide a seed for dealer.
-    transition place_bets(public round_index: u32, public player: address, public dealer: address, public seed: u64) -> RandomSeed {
-        assert_neq(dealer, player);
+    transition place_bets(public round_index: u32, public dealer: address, public seed: u64) -> RandomSeed {
+        // The dealer can't participate the round as a player.
+        assert_neq(dealer, self.caller);
+
         let random_seed: RandomSeed = RandomSeed {
             owner: dealer,
-            provider: player,
+            provider: self.caller,
             round: round_index,
             seed: seed,
         };
 
-        return random_seed then finalize(player, round_index, seed);
+        return random_seed then finalize(self.caller, round_index, seed);
     }
 
     finalize place_bets(public player_id: address, public round_index: u32, public seed: u64) {
         let round: Round = Mapping::get(rounds, round_index);
         assert(round.placed >= 0u8 && round.placed <= 3u8);
+
         let placed: u8 = round.placed;
         if placed == 0u8 {
             Mapping::set(rounds, round_index, Round {
@@ -169,6 +173,7 @@ program texasholdem.aleo {
             });
         }
         if placed == 1u8 {
+            // Same player can only place the bets once.
             assert_neq(player_id, round.player0.name);
             Mapping::set(rounds, round_index, Round {
                 dealer: round.dealer,
@@ -280,9 +285,11 @@ program texasholdem.aleo {
 
     finalize shuffling(public round_index: u32, public player0: address, public player1: address, public player2: address, public player3: address, public dealer: address) {
         let round: Round = Mapping::get(rounds, round_index);
+
         // All player must be placed.
         assert_eq(round.placed, 4u8);
-        // Dealer must be matched.
+
+        // The dealer must be matched.
         assert_eq(round.dealer, dealer);
 
         // Check all providers matches players.
@@ -331,14 +338,17 @@ program texasholdem.aleo {
 
     finalize deal_the_hand(public round_index: u32, public player_id: address, public position: u8) {
         let round: Round = Mapping::get(rounds, round_index);
+
         // All player must be placed.
         assert_eq(round.placed, 4u8);
+
         // Each player has 2 hole cards.
         assert(position >= 1u8 && position <= 8u8);
         assert(round.player0.cards == 0u8 || round.player0.cards == 1u8);
         assert(round.player1.cards == 0u8 || round.player1.cards == 1u8);
         assert(round.player2.cards == 0u8 || round.player2.cards == 1u8);
         assert(round.player3.cards == 0u8 || round.player3.cards == 1u8);
+
         // Only participate can have the cards.
         assert(player_id == round.player0.name || player_id == round.player1.name || player_id == round.player2.name || player_id == round.player3.name);
 

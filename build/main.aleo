@@ -77,13 +77,12 @@ finalize new_round:
 function place_bets:
     input r0 as u32.public;
     input r1 as address.public;
-    input r2 as address.public;
-    input r3 as u64.public;
-    assert.neq r2 r1;
-    cast r2 r1 r0 r3 into r4 as RandomSeed.record;
-    output r4 as RandomSeed.record;
+    input r2 as u64.public;
+    assert.neq r1 self.caller;
+    cast r1 self.caller r0 r2 into r3 as RandomSeed.record;
+    output r3 as RandomSeed.record;
 
-    finalize r1 r0 r3;
+    finalize self.caller r0 r2;
 
 finalize place_bets:
     input r0 as address.public;
