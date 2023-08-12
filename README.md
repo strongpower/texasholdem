@@ -1081,7 +1081,7 @@ Let's do the summary:
 
 - river: A of ♣️
 
-So the winner is Player3, he get double Ace!
+So the winner is Player3, he get double Ace! Player2 is so close to get Straight Flush!
 
 Set the .env private key to the dealer.
 
