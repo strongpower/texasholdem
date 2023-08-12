@@ -950,14 +950,22 @@ program texasholdem.aleo {
     // Swap byte for one u64 by two index.
     inline swap_bytes(u: u64, i: u8, j: u8) -> u64 {
         // Extract the bytes at positions i and j
-        let byte_i: u64 = (u >> ((7u8 - i) * 8u8)) as u64 & 255u64;
-        let byte_j: u64 = (u >> ((7u8 - j) * 8u8)) as u64 & 255u64;
+        let i_shift: u8 = (7u8 - i) * 8u8;
+        let j_shift: u8 = (7u8 - j) * 8u8;
+        let mask_i: u64 = u >> i_shift;
+        let mask_j: u64 = u >> j_shift;
+        let byte_i: u64 = mask_i & 255u64;
+        let byte_j: u64 = mask_j & 255u64;
 
         // Clear the bytes at positions i and j in the original u64
-        let u_without_bytes: u64 = u & !((255u64 << ((7u8 - i) * 8u8)) as u64 | (255u64 << ((7u8 - j) * 8u8)) as u64);
+        let left_mask_i: u64 = 255u64 << i_shift;
+        let left_mask_j: u64 = 255u64 << j_shift;
+        let u_without_bytes: u64 = u & !(left_mask_i | left_mask_j);
 
         // Create the new u64 with swapped bytes
-        let new_u: u64 = u_without_bytes | (byte_i << ((7u8 - j) * 8u8)) as u64 | (byte_j << ((7u8 - i) * 8u8)) as u64;
+        let shifted_i: u64 = byte_i << j_shift;
+        let shifted_j: u64 = byte_j << i_shift;
+        let new_u: u64 = u_without_bytes | shifted_i | shifted_j;
 
         return new_u;
     }
