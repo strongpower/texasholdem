@@ -34,12 +34,9 @@ program texasholdem.aleo {
     struct Player {
         name: address,
         cards: u8,
-        // Final hand of 5 cards.
+        // Hole cards.
         hand0: u64,
         hand1: u64,
-        hand2: u64,
-        hand3: u64,
-        hand4: u64,
     }
 
     struct Round {
@@ -88,36 +85,24 @@ program texasholdem.aleo {
                 cards: 0u8,
                 hand0: 255u64,
                 hand1: 255u64,
-                hand2: 255u64,
-                hand3: 255u64,
-                hand4: 255u64,
             },
             player1: Player {
                 name: dealer,
                 cards: 0u8,
                 hand0: 255u64,
                 hand1: 255u64,
-                hand2: 255u64,
-                hand3: 255u64,
-                hand4: 255u64,
             },
             player2: Player {
                 name: dealer,
                 cards: 0u8,
                 hand0: 255u64,
                 hand1: 255u64,
-                hand2: 255u64,
-                hand3: 255u64,
-                hand4: 255u64,
             },
             player3: Player {
                 name: dealer,
                 cards: 0u8,
                 hand0: 255u64,
                 hand1: 255u64,
-                hand2: 255u64,
-                hand3: 255u64,
-                hand4: 255u64,
             },
             flop0: 255u64,
             flop1: 255u64,
@@ -158,9 +143,6 @@ program texasholdem.aleo {
                     cards: 0u8,
                     hand0: round.player0.hand0,
                     hand1: round.player0.hand1,
-                    hand2: round.player0.hand2,
-                    hand3: round.player0.hand3,
-                    hand4: round.player0.hand4,
                 },
                 player1: round.player1,
                 player2: round.player2,
@@ -185,9 +167,6 @@ program texasholdem.aleo {
                     cards: 0u8,
                     hand0: round.player1.hand0,
                     hand1: round.player1.hand1,
-                    hand2: round.player1.hand2,
-                    hand3: round.player1.hand3,
-                    hand4: round.player1.hand4
                 },
                 player2: round.player2,
                 player3: round.player3,
@@ -212,9 +191,6 @@ program texasholdem.aleo {
                     cards: 0u8,
                     hand0: round.player2.hand0,
                     hand1: round.player2.hand1,
-                    hand2: round.player2.hand2,
-                    hand3: round.player2.hand3,
-                    hand4: round.player2.hand4
                 },
                 player3: round.player3,
                 flop0: round.flop0,
@@ -240,9 +216,6 @@ program texasholdem.aleo {
                     cards: 0u8,
                     hand0: round.player3.hand0,
                     hand1: round.player3.hand1,
-                    hand2: round.player3.hand2,
-                    hand3: round.player3.hand3,
-                    hand4: round.player3.hand4
                 },
                 flop0: round.flop0,
                 flop1: round.flop1,
@@ -364,9 +337,6 @@ program texasholdem.aleo {
                     cards: round.player0.cards + 1u8,
                     hand0: round.player0.hand0,
                     hand1: round.player0.hand1,
-                    hand2: round.player0.hand2,
-                    hand3: round.player0.hand3,
-                    hand4: round.player0.hand4
                 },
                 player1: round.player1,
                 player2: round.player2,
@@ -390,9 +360,6 @@ program texasholdem.aleo {
                     cards: round.player1.cards + 1u8,
                     hand0: round.player1.hand0,
                     hand1: round.player1.hand1,
-                    hand2: round.player1.hand2,
-                    hand3: round.player1.hand3,
-                    hand4: round.player1.hand4
                 },
                 player2: round.player2,
                 player3: round.player3,
@@ -416,9 +383,6 @@ program texasholdem.aleo {
                     cards: round.player1.cards + 1u8,
                     hand0: round.player2.hand0,
                     hand1: round.player2.hand1,
-                    hand2: round.player2.hand2,
-                    hand3: round.player2.hand3,
-                    hand4: round.player2.hand4
                 },
                 player3: round.player3,
                 flop0: round.flop0,
@@ -442,9 +406,6 @@ program texasholdem.aleo {
                     cards: round.player3.cards + 1u8,
                     hand0: round.player3.hand0,
                     hand1: round.player3.hand1,
-                    hand2: round.player3.hand2,
-                    hand3: round.player3.hand3,
-                    hand4: round.player3.hand4
                 },
                 flop0: round.flop0,
                 flop1: round.flop1,
@@ -642,39 +603,19 @@ program texasholdem.aleo {
         });
     }
 
-    transition showdown(public round_index: u32, card0: Card, card1: Card, public card2: u64, public card3: u64, public card4: u64) {
+    transition showdown(public round_index: u32, card0: Card, card1: Card) {
         // Only same round cards are allowed!
         assert_eq(round_index, card0.round);
         assert_eq(round_index, card1.round);
 
-        // Make sure board cards are legal
-        assert(card2 >= 0u64 && card2 <= 51u64);
-        assert(card3 >= 0u64 && card3 <= 51u64);
-        assert(card4 >= 0u64 && card4 <= 51u64);
+        // Make sure two hole card are unique
+        assert(card0.id != card1.id);
 
-        // Make sure each board card is unique
-        assert(card2 != card3);
-        assert(card2 != card4);
-        assert(card3 != card4);
-
-        return then finalize(round_index, card0.owner, card0.id, card1.id, card2, card3, card4);
+        return then finalize(round_index, card0.owner, card0.id, card1.id);
     }
 
-    finalize showdown(public round_index: u32, public player: address, public card0: u64, public card1: u64, public card2: u64, public card3: u64, public card4: u64) {
+    finalize showdown(public round_index: u32, public player: address, public card0: u64, public card1: u64) {
         let round: Round = Mapping::get(rounds, round_index);
-
-        // Make sure board cards within the community cards.
-        let matched: u8 = 0u8;
-        if card2 == round.flop0 || card2 == round.flop1 || card2 == round.flop2 || card2 == round.turn || card2 == round.river {
-            matched += 1u8;
-        }
-        if card3 == round.flop0 || card3 == round.flop1 || card3 == round.flop2 || card3 == round.turn || card3 == round.river {
-            matched += 1u8;
-        }
-        if card4 == round.flop0 || card4 == round.flop1 || card4 == round.flop2 || card4 == round.turn || card4 == round.river {
-            matched += 1u8;
-        }
-        assert_eq(matched, 3u8);
 
         // Only after rivered, then showdown.
         assert(round.river != 255u64);
@@ -689,9 +630,6 @@ program texasholdem.aleo {
                     cards: round.player0.cards,
                     hand0: card0,
                     hand1: card1,
-                    hand2: card2,
-                    hand3: card3,
-                    hand4: card4,
                 },
                 player1: round.player1,
                 player2: round.player2,
@@ -714,9 +652,6 @@ program texasholdem.aleo {
                     cards: round.player1.cards,
                     hand0: card0,
                     hand1: card1,
-                    hand2: card2,
-                    hand3: card3,
-                    hand4: card4,
                 },
                 player2: round.player2,
                 player3: round.player3,
@@ -739,9 +674,6 @@ program texasholdem.aleo {
                     cards: round.player2.cards,
                     hand0: card0,
                     hand1: card1,
-                    hand2: card2,
-                    hand3: card3,
-                    hand4: card4,
                 },
                 player3: round.player3,
                 flop0: round.flop0,
@@ -764,9 +696,6 @@ program texasholdem.aleo {
                     cards: round.player3.cards,
                     hand0: card0,
                     hand1: card1,
-                    hand2: card2,
-                    hand3: card3,
-                    hand4: card4,
                 },
                 flop0: round.flop0,
                 flop1: round.flop1,
@@ -775,6 +704,48 @@ program texasholdem.aleo {
                 river: round.river,
             });
         }
+    }
+
+    transition win(public round_index: u32, public winner: address) {
+        return then finalize(round_index, winner, self.caller);
+    }
+
+    finalize win(public round_index: u32, public winner: address, public dealer: address) {
+        let round: Round = Mapping::get(rounds, round_index);
+
+        // Only the dealer can announce the winner
+        assert_eq(dealer, round.dealer);
+
+        // Only after rivered, then showdown.
+        assert(round.river != 255u64);
+
+        // Make sure all player's hole cards are showdown!
+        assert_neq(round.player0.hand0, 255u64);
+        assert_neq(round.player0.hand1, 255u64);
+
+        assert_neq(round.player1.hand0, 255u64);
+        assert_neq(round.player1.hand1, 255u64);
+
+        assert_neq(round.player2.hand0, 255u64);
+        assert_neq(round.player2.hand1, 255u64);
+
+        assert_neq(round.player3.hand0, 255u64);
+        assert_neq(round.player3.hand1, 255u64);
+
+        Mapping::set(rounds, round_index, Round {
+            dealer: round.dealer,
+            winer: winner,
+            placed: round.placed,
+            player0: round.player0,
+            player1: round.player1,
+            player2: round.player2,
+            player3: round.player3,
+            flop0: round.flop0,
+            flop1: round.flop1,
+            flop2: round.flop2,
+            turn: round.turn,
+            river: round.river,
+        });
     }
 
     /// Inline functions
