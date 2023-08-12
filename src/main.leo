@@ -66,7 +66,7 @@ program texasholdem.aleo {
         assert_eq(dealer, self.caller);
         let random_seed: RandomSeed = RandomSeed {
             owner: dealer,
-            provider: self.caller,
+            provider: dealer,
             round: round_index,
             seed: seed,
         };
@@ -128,16 +128,16 @@ program texasholdem.aleo {
 
     // Players place their bets to participate the round.
     // They provide a seed for dealer.
-    transition place_bets(public round_index: u32, public dealer: address, public seed: u64) -> RandomSeed {
-        assert_neq(dealer, self.caller);
+    transition place_bets(public round_index: u32, public player: address, public dealer: address, public seed: u64) -> RandomSeed {
+        assert_neq(dealer, player);
         let random_seed: RandomSeed = RandomSeed {
             owner: dealer,
-            provider: self.caller,
+            provider: player,
             round: round_index,
             seed: seed,
         };
 
-        return random_seed then finalize(self.caller, round_index, seed);
+        return random_seed then finalize(player, round_index, seed);
     }
 
     finalize place_bets(public player_id: address, public round_index: u32, public seed: u64) {
@@ -169,6 +169,7 @@ program texasholdem.aleo {
             });
         }
         if placed == 1u8 {
+            assert_neq(player_id, round.player0.name);
             Mapping::set(rounds, round_index, Round {
                 dealer: round.dealer,
                 winer: round.winer,
@@ -193,6 +194,8 @@ program texasholdem.aleo {
             });
         }
         if placed == 2u8 {
+            assert_neq(player_id, round.player0.name);
+            assert_neq(player_id, round.player1.name);
             Mapping::set(rounds, round_index, Round {
                 dealer: round.dealer,
                 winer: round.winer,
@@ -217,6 +220,9 @@ program texasholdem.aleo {
             });
         }
         if placed == 3u8 {
+            assert_neq(player_id, round.player0.name);
+            assert_neq(player_id, round.player1.name);
+            assert_neq(player_id, round.player2.name);
             Mapping::set(rounds, round_index, Round {
                 dealer: round.dealer,
                 winer: round.winer,
@@ -256,9 +262,8 @@ program texasholdem.aleo {
         let (cards0, cards1, cards2, cards3, cards4, cards5, cards6): (u64, u64, u64, u64, u64, u64, u64) = 
         shuffle_cards(drs0.seed, drs1.seed, drs2.seed, drs3.seed, drsd.seed);
 
-        // Since only dealer can use record, self.caller must be dealer.
         let card_list: CardList = CardList {
-            owner: self.caller,
+            owner: drsd.owner,
             cards0: cards0,
             cards1: cards1,
             cards2: cards2,
@@ -270,7 +275,7 @@ program texasholdem.aleo {
         };
 
         // check the provider matches
-        return card_list then finalize(round_index, drs0.provider, drs1.provider, drs2.provider, drs3.provider, self.caller);
+        return card_list then finalize(round_index, drs0.provider, drs1.provider, drs2.provider, drs3.provider, drsd.owner);
     }
 
     finalize shuffling(public round_index: u32, public player0: address, public player1: address, public player2: address, public player3: address, public dealer: address) {
@@ -642,7 +647,7 @@ program texasholdem.aleo {
         assert(card2 != card4);
         assert(card3 != card4);
 
-        return then finalize(round_index, self.caller, card0.id, card1.id, card2, card3, card4);
+        return then finalize(round_index, card0.owner, card0.id, card1.id, card2, card3, card4);
     }
 
     finalize showdown(public round_index: u32, public player: address, public card0: u64, public card1: u64, public card2: u64, public card3: u64, public card4: u64) {
@@ -891,34 +896,60 @@ program texasholdem.aleo {
             if j >= 48u8 && j <= 51u8 {
                 cards6 = new_right;
             }
+
+            seed = ((seed * 251u8) % 255u8) + 1u8;
         }
 
         return (cards0, cards1, cards2, cards3, cards4, cards5, cards6);
     }
 
-    // Swap 8 bits for two u64 by index
+    // Swap byte for two u64 by two index
     inline swap_bits(a: u64, b: u64, l: u8, r: u8) -> (u64, u64) {
         assert(l >= 0u8 && l < 8u8);
         assert(r >= 0u8 && r < 8u8);
 
-        let a_shift: u8 = 8u8 * (7u8 - l);
-        let a_mask: u64 = 255u64 << a_shift;
-        let a_bits: u64 = (a & a_mask) >> a_shift;
+        if a == b {
+            if l == r {
+                return (a, b);
+            } else {
+                let new_a: u64 = swap_bytes(a, l, r);
+                return (new_a, new_a);
+            }
+        } else {
+            let a_shift: u8 = 8u8 * (7u8 - l);
+            let a_mask: u64 = 255u64 << a_shift;
+            let a_bits: u64 = (a & a_mask) >> a_shift;
 
-        let b_shift: u8 = 8u8 * (7u8 - r);
-        let b_mask: u64 = 255u64 << b_shift;
-        let b_bits: u64 = (b & b_mask) >> b_shift;
+            let b_shift: u8 = 8u8 * (7u8 - r);
+            let b_mask: u64 = 255u64 << b_shift;
+            let b_bits: u64 = (b & b_mask) >> b_shift;
 
-        // Handle Leo's ETYC0372003 error, we define the intermedia value
-        let a_left: u64 = a & !a_mask;
-        let a_right: u64 = b_bits << a_shift;
-        let new_a: u64 = a_left | a_right;
+            // Handle Leo's ETYC0372003 error, we define the intermedia value
+            let a_left: u64 = a & !a_mask;
+            let a_right: u64 = b_bits << a_shift;
+            let new_a: u64 = a_left | a_right;
 
-        let b_left: u64 = b & !b_mask;
-        let b_right: u64 = a_bits << b_shift;
-        let new_b: u64 = b_left | b_right;
+            let b_left: u64 = b & !b_mask;
+            let b_right: u64 = a_bits << b_shift;
+            let new_b: u64 = b_left | b_right;
 
-        return (new_a, new_b);
+            return (new_a, new_b);
+        }
+    }
+
+    // Swap byte for one u64 by two index.
+    inline swap_bytes(u: u64, i: u8, j: u8) -> u64 {
+        // Extract the bytes at positions i and j
+        let byte_i: u64 = (u >> ((7u8 - i) * 8u8)) as u64 & 255u64;
+        let byte_j: u64 = (u >> ((7u8 - j) * 8u8)) as u64 & 255u64;
+
+        // Clear the bytes at positions i and j in the original u64
+        let u_without_bytes: u64 = u & !((255u64 << ((7u8 - i) * 8u8)) as u64 | (255u64 << ((7u8 - j) * 8u8)) as u64);
+
+        // Create the new u64 with swapped bytes
+        let new_u: u64 = u_without_bytes | (byte_i << ((7u8 - j) * 8u8)) as u64 | (byte_j << ((7u8 - i) * 8u8)) as u64;
+
+        return new_u;
     }
 
     // Choose cards from multiple cards by position.
