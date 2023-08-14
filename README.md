@@ -86,9 +86,9 @@ NETWORK=testnet3
 PRIVATE_KEY=APrivateKey1zkpG1uH9TvrNuT59QcwxTTy9LMNusarvxgYRNUoqW9KZxXV
 ```
 
-### 2. Dealer start a new round
+### 2. The dealer start a new round
 
-We use a multi-party composite pseudo-random number generation algorithm, which need the dealer and all the players to privide random seed to generating a random. So in this step, dealer should generate a u64 random seed. For example, we use Rust to generate a random, you can use [it](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=cfacd8f85c2f424f77d0ae3d9ddbe9db) too.
+We use a multi-party composite pseudo-random number generation algorithm, which need the dealer and all the players to privide random seed to generating a random. So in this step, the dealer should generate a u64 random seed. For example, we use Rust to generate a random, you can use [it](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=cfacd8f85c2f424f77d0ae3d9ddbe9db) too.
 
 Here the dealer start round 0, with random seed 10673168331723460832.
 
@@ -98,7 +98,7 @@ Here the dealer start round 0, with random seed 10673168331723460832.
 leo run new_round 0u32 aleo1tntmjcv55ezyqzk5mxc9s5x98uflu3ygsv3z2zq6jmnxz0gewsxs9esa8h 10673168331723460832u64
 ```
 
-The output is a Record type, which is a random seed that only dealer can know.
+The output is a Record type, which is a random seed that only the dealer can know.
 
 **Output**
 
@@ -238,7 +238,7 @@ leo run place_bets 0u32 aleo1tntmjcv55ezyqzk5mxc9s5x98uflu3ygsv3z2zq6jmnxz0gewsx
 }
 ```
 
-### 4. Dealer shuffling the cards
+### 4. The dealer shuffling the cards
 
 The dealer now uses players' 4 random seeds and his own random seed to generate a random, and shuffling the cards. All these random seeds are record types.
 
