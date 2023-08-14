@@ -1,5 +1,7 @@
 // The 'texasholdem' program.
 program texas_hold_em_123456789.aleo {
+    // We use this seed for the dealer and players.
+    // Everyone provide a random seed, which make it more random.
     // The dealer uses this and other player's to shuffling the cards.
     record RandomSeed {
         owner: address,
@@ -13,6 +15,7 @@ program texas_hold_em_123456789.aleo {
     // We define the order of suit and number by: spade, heart, dianmond, club
     // and A, K, Q, J, 10, 9, 8, 7, 6, 5, 4, 3, 2.
     // So the 0 is A of spade, 14 is K of heart, 51 is 2 of club, etc.
+    // position is the pointer, which represent the dealt number.
     record CardList {
         owner: address,
         cards0: u64,   // [0, 7], 8 cards, from 0 bit to 64 bit.
@@ -25,12 +28,14 @@ program texas_hold_em_123456789.aleo {
         position: u8,
     }
 
+    // The Record type of card, used for the hole card.
     record Card {
         owner: address,
         round: u32,
         id: u64,
     }
 
+    // Player's public states, hand0 and hand1 are hole cards after showdown.
     struct Player {
         name: address,
         cards: u8,
@@ -39,6 +44,7 @@ program texas_hold_em_123456789.aleo {
         hand1: u64,
     }
 
+    // Each round will have these attributes.
     struct Round {
         dealer: address,
         winer: address,
@@ -54,7 +60,7 @@ program texas_hold_em_123456789.aleo {
         river: u64,
     }
 
-    // (round_index, round)
+    // The public state (round_index, round)
     mapping rounds: u32 => Round;
 
     // The dealer start the new round with a random seed to shuffling the cards.
@@ -62,6 +68,7 @@ program texas_hold_em_123456789.aleo {
         // The dealer must personally initiate a new round, and anyone can be the dealer.
         assert_eq(dealer, self.caller);
 
+        // Create a private record random seed for the dealer.
         let random_seed: RandomSeed = RandomSeed {
             owner: dealer,
             provider: dealer,
@@ -76,6 +83,8 @@ program texas_hold_em_123456789.aleo {
         let contains: bool = Mapping::contains(rounds, round_index);
         assert(!contains);
 
+        // Initializing the round.
+        // Since all cards should be [0, 51], 255 can be used to initiate the cards.
         Mapping::set(rounds, round_index, Round {
             dealer: dealer,
             winer: dealer,
@@ -118,6 +127,8 @@ program texas_hold_em_123456789.aleo {
         // The dealer can't participate the round as a player.
         assert_neq(dealer, self.caller);
 
+        // Create a private record random seed for the dealer.
+        // The provider is the player.
         let random_seed: RandomSeed = RandomSeed {
             owner: dealer,
             provider: self.caller,
@@ -132,6 +143,7 @@ program texas_hold_em_123456789.aleo {
         let round: Round = Mapping::get(rounds, round_index);
         assert(round.placed >= 0u8 && round.placed <= 3u8);
 
+        // The players should participate in order.
         let placed: u8 = round.placed;
         if placed == 0u8 {
             Mapping::set(rounds, round_index, Round {
@@ -226,7 +238,7 @@ program texas_hold_em_123456789.aleo {
         }
     }
 
-    // The dealer uses players' 4 seed and his own seed,
+    // The dealer uses the players' 4 seed and his own seed,
     // obtain a number that determine the order of 52 cards.
     transition shuffling(public round_index: u32, drs0: RandomSeed, drs1: RandomSeed, drs2: RandomSeed, drs3: RandomSeed, drsd: RandomSeed) -> CardList {
         // Only same round's random seed can be used.
@@ -240,6 +252,7 @@ program texas_hold_em_123456789.aleo {
         let (cards0, cards1, cards2, cards3, cards4, cards5, cards6): (u64, u64, u64, u64, u64, u64, u64) = 
         shuffle_cards(drs0.seed, drs1.seed, drs2.seed, drs3.seed, drsd.seed);
 
+        // The dealer gets the shuffled cards, the players don't know.
         let card_list: CardList = CardList {
             owner: drsd.owner,
             cards0: cards0,
@@ -282,10 +295,13 @@ program texas_hold_em_123456789.aleo {
         assert_eq(matched, 4u8);
     }
 
+    // Deal the hand by the dealer, one card per transition.
+    // First deal the first hole card for each player, then the second one. Which should be in order.
     transition deal_the_hand(public round_index: u32, card_list: CardList, public player: address) -> (CardList, Card) {
         let position: u8 = card_list.position;
         assert(position >= 0u8 && position < 51u8);
 
+        // Choose one card from the cards list by position.
         let card_id: u64 = choose_card(position, card_list.cards0, card_list.cards1, card_list.cards2, card_list.cards3, card_list.cards4, card_list.cards5, card_list.cards6);
 
         let new_card_list: CardList = CardList {
@@ -300,6 +316,7 @@ program texas_hold_em_123456789.aleo {
             position: position + 1u8,
         };
 
+        // The dealt card is the hole card, which belongs to the player.
         let hole_card: Card = Card {
             owner: player,
             round: round_index,
@@ -416,6 +433,7 @@ program texas_hold_em_123456789.aleo {
         }
     }
 
+    // The dealer flop 3 cards, one card per transition. So it costs 3 transitions to finish flop.
     transition flop(public round_index: u32, card_list: CardList) -> CardList {
         let position: u8 = card_list.position;
         assert(position >= 8u8 && position <= 10u8);
@@ -441,9 +459,14 @@ program texas_hold_em_123456789.aleo {
         let round: Round = Mapping::get(rounds, round_index);
         // All player must be placed.
         assert_eq(round.placed, 4u8);
+
+        // It must has not turned yet.
         assert(round.turn == 255u64);
+
+        // It must has not rivered yet.
         assert(round.river == 255u64);
 
+        // Flop cards should be public.
         let floped: u8 = 0u8;
         if round.flop0 == 255u64 {
             Mapping::set(rounds, round_index, Round {
@@ -497,8 +520,10 @@ program texas_hold_em_123456789.aleo {
         }
     }
 
+    // The dealer turn the cards.
     transition turn(public round_index: u32, card_list: CardList) -> CardList {
         let position: u8 = card_list.position;
+        // At this time, 11 cards should be dealt.
         assert(position == 11u8);
 
         let card_id: u64 = choose_card(position, card_list.cards0, card_list.cards1, card_list.cards2, card_list.cards3, card_list.cards4, card_list.cards5, card_list.cards6);
@@ -550,8 +575,10 @@ program texas_hold_em_123456789.aleo {
         });
     }
 
+    // The dealer river the card.
     transition river(public round_index: u32, card_list: CardList) -> CardList {
         let position: u8 = card_list.position;
+        // At this time, 12 cards should be dealt.
         assert(position == 12u8);
 
         let card_id: u64 = choose_card(position, card_list.cards0, card_list.cards1, card_list.cards2, card_list.cards3, card_list.cards4, card_list.cards5, card_list.cards6);
@@ -603,12 +630,13 @@ program texas_hold_em_123456789.aleo {
         });
     }
 
+    // The player showdown his hole cards.
     transition showdown(public round_index: u32, card0: Card, card1: Card) {
         // Only same round cards are allowed!
         assert_eq(round_index, card0.round);
         assert_eq(round_index, card1.round);
 
-        // Make sure two hole card are unique
+        // Make sure each hole card are unique.
         assert(card0.id != card1.id);
 
         return then finalize(round_index, card0.owner, card0.id, card1.id);
@@ -617,7 +645,7 @@ program texas_hold_em_123456789.aleo {
     finalize showdown(public round_index: u32, public player: address, public card0: u64, public card1: u64) {
         let round: Round = Mapping::get(rounds, round_index);
 
-        // Only after rivered, then showdown.
+        // Showdown should be done after rivered.
         assert(round.river != 255u64);
 
         if player == round.player0.name {
@@ -706,6 +734,7 @@ program texas_hold_em_123456789.aleo {
         }
     }
 
+    // The dealer announce the winer of this round.
     transition win(public round_index: u32, public winner: address) {
         return then finalize(round_index, winner, self.caller);
     }
@@ -719,7 +748,7 @@ program texas_hold_em_123456789.aleo {
         // Only after rivered, then showdown.
         assert(round.river != 255u64);
 
-        // Make sure all player's hole cards are showdown!
+        // Make sure all the player's hole cards are showdown!
         assert_neq(round.player0.hand0, 255u64);
         assert_neq(round.player0.hand1, 255u64);
 
@@ -732,6 +761,23 @@ program texas_hold_em_123456789.aleo {
         assert_neq(round.player3.hand0, 255u64);
         assert_neq(round.player3.hand1, 255u64);
 
+        // Check the winner is one of the players.
+        let matched: u8 = 0u8;
+        if round.player0.name == winner {
+            matched += 1u8;
+        }
+        if round.player1.name == winner {
+            matched += 1u8;
+        }
+        if round.player2.name == winner {
+            matched += 1u8;
+        }
+        if round.player3.name == winner {
+            matched += 1u8;
+        }
+        assert_eq(matched, 1u8);
+
+        // Set the winner!
         Mapping::set(rounds, round_index, Round {
             dealer: round.dealer,
             winer: winner,
@@ -757,8 +803,10 @@ program texas_hold_em_123456789.aleo {
         let seed_c: u64 = seed_b.xor(seed3);
         let seed_d: u64 = seed_c.xor(seed4);
         
+        // The final seed.
         let seed: u8 = BHP256::hash_to_u8(seed_d);
 
+        // The original order of 52 cards.
         // 0x00_01_02_03_04_05_06_07
         let cards0: u64 = 283686952306183u64;
         // 0x08_09_0a_0b_0c_0d_0e_0f
@@ -878,6 +926,7 @@ program texas_hold_em_123456789.aleo {
                 cards6 = new_right;
             }
 
+            // Multiple the prime in u8 makes it more random.
             seed = ((seed * 251u8) % 255u8) + 1u8;
         }
 

@@ -1102,7 +1102,7 @@ at1pffpv7ehguzvp89kt92xve7lx98y7tzrxcdvpxgqkpch0cq7lyxs9kzajp
 
 📚Tricks
 
-* There are 3 parts fee: storage fee, namespace fee, priority fee.
+There are 3 parts fee: storage fee, namespace fee, priority fee.
 
 * Storage fee, every byte cost 1000 microcredits.
 
