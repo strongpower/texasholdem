@@ -9,7 +9,7 @@ program texas_hold_em_123456789.aleo {
     }
 
     // 52 cards, we use 8 bits to represent one card, so in all we need 8 * 52 = 416 bits
-    // Since the max integer is u128, we need two u128 and one u64.
+    // So we use 7 u64s, from cards0 to cards6.
     // We define the order of suit and number by: spade, heart, dianmond, club
     // and A, K, Q, J, 10, 9, 8, 7, 6, 5, 4, 3, 2.
     // So the 0 is A of spade, 14 is K of heart, 51 is 2 of club, etc.
