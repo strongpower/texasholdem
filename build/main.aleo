@@ -1,4 +1,4 @@
-program texasholdem.aleo;
+program texas_hold_em_123456789.aleo;
 
 record RandomSeed:
     owner as address.private;

@@ -1,5 +1,5 @@
 // The 'texasholdem' program.
-program texasholdem.aleo {
+program texas_hold_em_123456789.aleo {
     // The dealer uses this and other player's to shuffling the cards.
     record RandomSeed {
         owner: address,
