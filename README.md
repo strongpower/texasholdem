@@ -356,7 +356,6 @@ Get a updated cards and one hole card to player0.
   id: 48u64.private,
   _nonce: 6378733323186963231481352064100909218505757489494731107078768139531991516446group.public
 }
-
 ```
 
 As we can see, the first hole card of player0 is 48, lookup from [Rule](##Rule), it's a 5 of ♦️.
@@ -708,8 +707,6 @@ Now four players have their hole cards:
 * Player2: 5 of ♠️, J of ♠️
 
 * Player3: A of ♥️, 3 of ♠️
-
-
 
 Now it's time to flop.
 
@@ -1095,3 +1092,20 @@ PRIVATE_KEY=APrivateKey1zkpG1uH9TvrNuT59QcwxTTy9LMNusarvxgYRNUoqW9KZxXV
 ```shell
 leo run win 0u32 aleo1d0mwekavg4yz3qe53h9ed9pgc62yg62dggvtkqhsud23av35cq8qzaca2e
 ```
+
+## Deployment
+
+```shell
+✅ Successfully broadcast deployment at1pffpv7ehguzvp89kt92xve7lx98y7tzrxcdvpxgqkpch0cq7lyxs9kzajp ('texas_hold_em_123456789.aleo') to https://vm.aleo.org/api/testnet3/transaction/broadcast.
+at1pffpv7ehguzvp89kt92xve7lx98y7tzrxcdvpxgqkpch0cq7lyxs9kzajp
+```
+
+📚Tricks
+
+* There are 3 parts fee: storage fee, namespace fee, priority fee.
+
+* Storage fee, every byte cost 1000 microcredits.
+
+* Namespace fee, the algorithm is: `10^(10 - num_characters)`, this means the longer the name, the more it costs. In our program, we define a very long name.
+
+* Priority fee, you can just set it as 0 to save the fee.
