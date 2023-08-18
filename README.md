@@ -28,6 +28,13 @@ Through contributions spanning technological innovation, the implementation of a
 
 ## How to run
 
+* Prerequisite
+
+```shell
+leo 1.9.2
+snarkos v2.1.4
+```
+
 Before we begin, since there are 52 cards in the game, we choose one byte to represent one card, so u64 can be used to represent 8 cards. We define the id of each card as below:
 
 ## Rule
