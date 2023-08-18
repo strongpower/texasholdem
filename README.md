@@ -122,7 +122,7 @@ Each player need to place his bet to participate the round, meanwhile with a ran
 
 Set the .env private key to the player0.
 
-```json
+```.env
 NETWORK=testnet3
 PRIVATE_KEY=APrivateKey1zkpEh5pce3a9rZ1DbZF1BZCr2tNHZmDM7cJsYTsdppSgaWK
 ```
@@ -155,7 +155,7 @@ The output is a Record type random seed just like above the dealer made.
 
 Set the .env private key to the player1.
 
-```json
+```.env
 NETWORK=testnet3
 PRIVATE_KEY=APrivateKey1zkp3V4DMmPy4WtXck35wYFNr6vBUqsuZyVP1vrodbxNWbGj
 ```
@@ -184,7 +184,7 @@ leo run place_bets 0u32 aleo1tntmjcv55ezyqzk5mxc9s5x98uflu3ygsv3z2zq6jmnxz0gewsx
 
 Set the .env private key to the player2.
 
-```json
+```.env
 NETWORK=testnet3
 PRIVATE_KEY=APrivateKey1zkp5f4MhHDvdbia2qqHL1ALg2pA52XQtpPZASkC3y59dHvg
 ```
@@ -213,7 +213,7 @@ leo run place_bets 0u32 aleo1tntmjcv55ezyqzk5mxc9s5x98uflu3ygsv3z2zq6jmnxz0gewsx
 
 Set the .env private key to the player3.
 
-```json
+```.env
 NETWORK=testnet3
 PRIVATE_KEY=APrivateKey1zkp7kFCLEoro6VE3JNybKoMbpkeyL49Nz9fWBqMyNfTnNoA
 ```
@@ -244,7 +244,7 @@ The dealer now uses players' 4 random seeds and his own random seed to generate 
 
 Set the .env private key to the dealer.
 
-```json
+```.env
 NETWORK=testnet3
 PRIVATE_KEY=APrivateKey1zkpG1uH9TvrNuT59QcwxTTy9LMNusarvxgYRNUoqW9KZxXV
 ```
@@ -948,7 +948,7 @@ Player0 use his two hole cards to showdown.
 
 Set the .env private key to the player0.
 
-```json
+```.env
 NETWORK=testnet3
 PRIVATE_KEY=APrivateKey1zkpEh5pce3a9rZ1DbZF1BZCr2tNHZmDM7cJsYTsdppSgaWK
 ```
@@ -977,7 +977,7 @@ Player1 use his two hole cards to showdown.
 
 Set the .env private key to the player1.
 
-```json
+```.env
 NETWORK=testnet3
 PRIVATE_KEY=APrivateKey1zkp3V4DMmPy4WtXck35wYFNr6vBUqsuZyVP1vrodbxNWbGj
 ```
@@ -1006,7 +1006,7 @@ Player2 use his two hole cards to showdown.
 
 Set the .env private key to the player2.
 
-```json
+```.env
 NETWORK=testnet3
 PRIVATE_KEY=APrivateKey1zkp5f4MhHDvdbia2qqHL1ALg2pA52XQtpPZASkC3y59dHvg
 ```
@@ -1035,7 +1035,7 @@ Player3 use his two hole cards to showdown.
 
 Set the .env private key to the player3.
 
-```json
+```.env
 NETWORK=testnet3
 PRIVATE_KEY=APrivateKey1zkp7kFCLEoro6VE3JNybKoMbpkeyL49Nz9fWBqMyNfTnNoA
 ```
@@ -1082,7 +1082,7 @@ So the winner is Player3, he get double Ace! Player2 is so close to get Straight
 
 Set the .env private key to the dealer.
 
-```json
+```.env
 NETWORK=testnet3
 PRIVATE_KEY=APrivateKey1zkpG1uH9TvrNuT59QcwxTTy9LMNusarvxgYRNUoqW9KZxXV
 ```
