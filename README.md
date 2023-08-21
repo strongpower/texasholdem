@@ -1122,3 +1122,4 @@ There are 3 parts fee: storage fee, namespace fee, priority fee.
 1. Add credits transfer/stake in the game (like a real Texas Hold'em)
 2. Replace the cards bit representation if Leo's array feature is ready (It may save a lot of constraints and code!)
 3. Maybe a UI? like a real dapp.
+4. Dynamic players instead of fixed 4 when array is ready.
